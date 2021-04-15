@@ -24,7 +24,7 @@ export default async function () {
   });
 
   // check responses
-  const repoResponse = await octokit.repos.get({
+  const repoResponse = await octokit.rest.repos.get({
     owner: "octokit",
     repo: "rest.js",
   });
@@ -34,26 +34,28 @@ export default async function () {
   repoResponse.headers.etag;
   repoResponse.headers.status;
 
-  const userResponse = await octokit.users.getByUsername({
+  const userResponse = await octokit.rest.users.getByUsername({
     username: "octokit",
   });
   userResponse.data.login;
   userResponse.data.type;
 
-  const userIssuesResponse = await octokit.issues.listForAuthenticatedUser({
-    state: "open",
-  });
+  const userIssuesResponse = await octokit.rest.issues.listForAuthenticatedUser(
+    {
+      state: "open",
+    }
+  );
   userIssuesResponse.data[0].locked;
 
   // endpoint method
-  await octokit.issues.addLabels({
+  await octokit.rest.issues.addLabels({
     owner: "octokit",
     repo: "rest.js",
     issue_number: 10,
     labels: ["label"],
   });
 
-  const requestOptions = octokit.issues.addLabels.endpoint({
+  const requestOptions = octokit.rest.issues.addLabels.endpoint({
     owner: "octokit",
     repo: "rest.js",
     number: 10,
@@ -67,17 +69,17 @@ export default async function () {
   requestOptions.headers;
   requestOptions.body;
   requestOptions.request.foo;
-  octokit.issues.addLabels.endpoint.merge({
+  octokit.rest.issues.addLabels.endpoint.merge({
     foo: "bar",
   });
 
   // parameter deprecation
-  await octokit.issues.get({
+  await octokit.rest.issues.get({
     owner: "octokit",
     repo: "rest.js",
     issue_number: 10, // deprecated, renamed to "issue_number", see below
   });
-  await octokit.issues.get({
+  await octokit.rest.issues.get({
     owner: "octokit",
     repo: "rest.js",
     issue_number: 10,
@@ -92,8 +94,9 @@ export default async function () {
   });
 
   const findInCache = (etag: string) => ({ hello: "world" });
-  octokit.hook.error("request", async (error, options) => {
-    if (error.status === 304) {
+  // @ts-expect-error - gr2m/before-after-hook#91
+  octokit.hook.error("request", async (error) => {
+    if ("status" in error && error.status === 304) {
       return findInCache(error.headers.etag);
     }
 
@@ -152,7 +155,7 @@ export default async function () {
       // labelNames is now an array with the names only
     });
 
-  const options = octokit.issues.listForRepo.endpoint.merge({
+  const options = octokit.rest.issues.listForRepo.endpoint.merge({
     owner: "octokit",
     repo: "rest.js",
   });
@@ -162,17 +165,6 @@ export default async function () {
     // do whatever you want with each response, break out of the loop, etc.
     console.log(response.data.map((repo) => repo.id));
   }
-
-  // register endpoints
-  octokit.registerEndpoints({
-    funk: {
-      method: "DELETE",
-      url: "/funk",
-      request: {
-        foo: "bar",
-      },
-    },
-  });
 
   // Plugins
   const MyOctokit = Octokit.plugin((octokit, options) => {
@@ -193,7 +185,7 @@ export default async function () {
 
   // mediaType parameter
   // https://github.com/probot/probot/issues/1024
-  await octokit.pulls.get({
+  await octokit.rest.pulls.get({
     owner: "owner",
     repo: "repo",
     pull_number: 123,
